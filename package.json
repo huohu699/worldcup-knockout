@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "netlify dev",
+    "deploy": "netlify deploy --prod --dir ."
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.38.1"
+  }
+}
