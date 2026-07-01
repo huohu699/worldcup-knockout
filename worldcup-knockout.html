@@ -329,6 +329,42 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .match-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .live-link {
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 11px;
+      border: 1px solid rgba(42, 192, 117, .38);
+      border-radius: 999px;
+      background: rgba(42, 192, 117, .12);
+      color: #c8ffe2;
+      font-size: 12px;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .live-link.live {
+      border-color: rgba(255, 66, 97, .55);
+      background: rgba(255, 66, 97, .16);
+      color: #fff;
+    }
+
+    .live-link.disabled {
+      pointer-events: none;
+      color: var(--muted2);
+      border-color: var(--line);
+      background: rgba(255,255,255,.045);
+    }
+
     .status {
       display: inline-flex;
       align-items: center;
@@ -404,12 +440,14 @@
       inset: 0;
       width: 100%;
       height: 100%;
+      z-index: 1;
       pointer-events: none;
       overflow: visible;
     }
 
     .bracket-match {
       position: absolute;
+      z-index: 2;
       width: 188px;
       min-height: 98px;
       padding: 10px 12px;
@@ -933,6 +971,9 @@
       document.addEventListener("keydown", event => {
         if (event.key === "Escape") closeDetail();
       });
+      window.addEventListener("resize", debounce(() => {
+        if (state.activeTab === "bracket") renderBracket();
+      }, 120));
     }
 
     function renderLoading() {
@@ -1044,6 +1085,7 @@
           <div class="team-row">${teamMarkup(match.away)}<span class="score">${escapeHtml(match.awayScore)}</span></div>
           <div class="score-detail">${escapeHtml(scoreDetail(match))}</div>
           <div class="venue">${escapeHtml(match.venue)} · ${escapeHtml(match.city)}</div>
+          <div class="match-actions">${liveLink(match)}</div>
         </article>
       `;
     }
@@ -1057,20 +1099,19 @@
         : "小组赛结束后自动生成完整对阵；当前先展示淘汰赛槽位结构。";
       els.bracketArea.innerHTML = `
         <div class="bracket-note">${escapeHtml(note)}</div>
-        <div class="bracket-stage-labels">${stages.map(stage => `<div>${escapeHtml(stage.name)}</div>`).join("")}</div>
-        <div class="bracket-canvas" style="height:${layout.height}px">
-          <svg class="bracket-svg" viewBox="0 0 ${layout.width} ${layout.height}" preserveAspectRatio="none">
-            ${layout.lines.map(line => `<path d="${line.d}" fill="none" stroke="${line.active ? "var(--gold)" : "rgba(255,255,255,.18)"}" stroke-width="${line.active ? 3 : 2}" stroke-linecap="round"/>`).join("")}
-          </svg>
+        <div class="bracket-stage-labels" style="width:${layout.width}px">${stages.map(stage => `<div>${escapeHtml(stage.name)}</div>`).join("")}</div>
+        <div class="bracket-canvas" style="width:${layout.width}px;height:${layout.height}px">
+          <svg class="bracket-svg" aria-hidden="true"></svg>
           ${layout.nodes.map(item => renderBracketNode(item.match, item)).join("")}
         </div>
       `;
+      requestAnimationFrame(drawBracketLines);
     }
     function renderBracketNode(match, item) {
       const homeWin = match.winner === "HOME_TEAM";
       const awayWin = match.winner === "AWAY_TEAM";
       return `
-        <article class="bracket-match ${match.winner ? "advanced" : ""} ${match.placeholder ? "placeholder" : ""}" data-id="${escapeHtml(match.id)}" style="left:${item.x}px;top:${item.y}px">
+        <article class="bracket-match ${match.winner ? "advanced" : ""} ${match.placeholder ? "placeholder" : ""}" data-id="${escapeHtml(match.id)}" data-col="${item.col}" data-index="${item.index}" style="left:${item.x}px;top:${item.y}px">
           <div class="bracket-time"><span>${escapeHtml(match.slotLabel || match.stage)}</span><span>${escapeHtml(shortTime(match.utcDate))}</span></div>
           <div class="bracket-team ${homeWin ? "win" : awayWin ? "lose" : ""}">${teamMarkup(match.home)}<span class="score">${escapeHtml(match.homeScore)}</span></div>
           <div class="bracket-team ${awayWin ? "win" : homeWin ? "lose" : ""}">${teamMarkup(match.away)}<span class="score">${escapeHtml(match.awayScore)}</span></div>
@@ -1108,54 +1149,85 @@
 
     function bracketLayout(matches) {
       const cardW = 188;
-      const cardH = 98;
+      const cardH = 150;
       const colGap = 260;
-      const width = cardW + colGap * (stages.length - 1) + 48;
-      const rowGap = 112;
-      const top = 16;
+      const sidePad = 18;
+      const topPad = 18;
+      const bottomPad = 28;
+      const verticalGap = 30;
+      const width = cardW + colGap * (stages.length - 1) + sidePad * 2;
+      const maxRoundSize = Math.max(...stages.map(stage => matches.filter(match => match.stage === stage.name).length));
+      const height = Math.max(760, topPad + bottomPad + maxRoundSize * cardH + Math.max(0, maxRoundSize - 1) * verticalGap);
       const nodes = [];
       for (const stage of stages) {
         const stageMatches = matches.filter(match => match.stage === stage.name);
         const col = stageIndex(stage.name);
+        const available = height - topPad - bottomPad - cardH;
+        const step = stageMatches.length > 1 ? available / (stageMatches.length - 1) : 0;
         stageMatches.forEach((match, index) => {
-          const group = stage.name === "三四名决赛" ? 16 : Math.max(1, 2 ** col);
-          let y = top + (index * group + group / 2 - .5) * rowGap;
-          if (stage.name === "决赛") y = top + (16 / 2 - .5) * rowGap;
-          if (stage.name === "三四名决赛") y = top + (16 / 2 + 1.35) * rowGap;
+          // 每一轮只根据本轮卡片数量均分垂直空间，窗口变化时整体重算，避免重叠。
+          const y = stageMatches.length > 1 ? topPad + index * step : (height - cardH) / 2;
           nodes.push({
             match,
             index,
             col,
-            x: Math.round(col * colGap),
-            y: Math.round(y),
-            centerX: Math.round(col * colGap + cardW),
-            centerY: Math.round(y + cardH / 2)
+            x: Math.round(sidePad + col * colGap),
+            y: Math.round(y)
           });
         });
       }
-      const nodesByStage = new Map();
-      for (const node of nodes) {
-        if (!nodesByStage.has(node.match.stage)) nodesByStage.set(node.match.stage, []);
-        nodesByStage.get(node.match.stage).push(node);
+      return { width, height, nodes };
+    }
+
+    function drawBracketLines() {
+      const canvas = els.bracketArea.querySelector(".bracket-canvas");
+      const svg = els.bracketArea.querySelector(".bracket-svg");
+      if (!canvas || !svg) return;
+      const canvasBox = canvas.getBoundingClientRect();
+      const cards = Array.from(canvas.querySelectorAll(".bracket-match"));
+      const byKey = new Map(cards.map(card => [`${card.dataset.col}:${card.dataset.index}`, card]));
+      svg.setAttribute("viewBox", `0 0 ${canvas.scrollWidth} ${canvas.scrollHeight}`);
+      svg.setAttribute("width", canvas.scrollWidth);
+      svg.setAttribute("height", canvas.scrollHeight);
+      svg.innerHTML = "";
+
+      for (const card of cards) {
+        const col = Number(card.dataset.col);
+        const index = Number(card.dataset.index);
+        if (stages[col]?.name === "决赛" || stages[col]?.name === "三四名决赛") continue;
+        const target = byKey.get(`${col + 1}:${Math.floor(index / 2)}`);
+        if (!target) continue;
+        const from = edgePoint(card, canvasBox, "right");
+        const to = edgePoint(target, canvasBox, "left");
+        const mid = from.x + Math.max(34, (to.x - from.x) / 2);
+        const match = state.bracketSlots.find(item => item.id === card.dataset.id);
+        const targetMatch = state.bracketSlots.find(item => item.id === target.dataset.id);
+        const winner = match ? winnerName(match) : "";
+        const active = Boolean(winner && targetMatch && [targetMatch.home, targetMatch.away].includes(winner));
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", `M${from.x},${from.y} C${mid},${from.y} ${mid},${to.y} ${to.x},${to.y}`);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", active ? "var(--gold)" : "rgba(255,255,255,.18)");
+        path.setAttribute("stroke-width", active ? "3" : "2");
+        path.setAttribute("stroke-linecap", "round");
+        svg.appendChild(path);
       }
-      const lines = [];
-      for (const node of nodes) {
-        if (node.match.stage === "决赛" || node.match.stage === "三四名决赛") continue;
-        const targetStage = stages[node.col + 1]?.name;
-        if (!targetStage) continue;
-        const targetNode = nodesByStage.get(targetStage)?.[Math.floor(node.index / 2)];
-        if (!targetNode) continue;
-        const x1 = node.x + cardW;
-        const y1 = node.y + cardH / 2;
-        const x2 = targetNode.x;
-        const y2 = targetNode.y + cardH / 2;
-        const mid = x1 + Math.max(24, (x2 - x1) / 2);
-        const winner = winnerName(node.match);
-        const active = Boolean(winner && [targetNode.match.home, targetNode.match.away].includes(winner));
-        lines.push({ active, d: `M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}` });
-      }
-      const height = Math.max(760, ...nodes.map(node => node.y + cardH + 24));
-      return { width, height, nodes, lines };
+    }
+
+    function edgePoint(card, canvasBox, side) {
+      const box = card.getBoundingClientRect();
+      return {
+        x: Math.round((side === "right" ? box.right : box.left) - canvasBox.left),
+        y: Math.round(box.top + box.height / 2 - canvasBox.top)
+      };
+    }
+
+    function debounce(fn, delay) {
+      let timer;
+      return (...args) => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => fn(...args), delay);
+      };
     }
     function renderStats() {
       if (!state.matches.length) {
@@ -1229,13 +1301,14 @@
           <div class="team-row">${teamMarkup(match.away)}<span class="score">${escapeHtml(match.awayScore)}</span></div>
           <div class="score-detail">${escapeHtml(scoreDetail(match))}</div>
           <div class="venue">状态：${statusText(match.status)}</div>
+          <div class="match-actions">${liveLink(match)}</div>
         </div>
         ${renderAiPanel(match)}
       `;
       els.modal.classList.add("show");
     }
 
-    function renderAiPanel(match, analysis) {
+    function renderAiPanel(match, analysis, errorMessage) {
       const cached = analysis || readAiCache(match.id);
       const disabled = match.placeholder || !/^\d+$/.test(match.id);
       const total = cached?.total ? `${cached.total.home ?? 0} : ${cached.total.away ?? 0}` : "-- : --";
@@ -1253,6 +1326,7 @@
             <button class="ai-action" type="button" data-ai-match="${escapeHtml(match.id)}" ${disabled ? "disabled" : ""}>${buttonText}</button>
           </div>
           <div class="ai-total"><span class="venue">综合评分</span><strong>${escapeHtml(total)}</strong></div>
+          ${errorMessage ? `<div class="ai-box" style="margin-top:10px;border-color:rgba(255,66,97,.45)"><span>请求错误</span><p>${escapeHtml(errorMessage)}</p></div>` : ""}
           <div class="ai-grid">
             <div class="ai-box"><span>阵容与健康</span><p>${escapeHtml(lineupPreview(cached, "home") || "首发11人 + 3名关键替补，含俱乐部、位置、伤病与体能评分。")}</p></div>
             <div class="ai-box"><span>客队阵容</span><p>${escapeHtml(lineupPreview(cached, "away") || "客队首发、替补深度、黄牌风险与体能消耗将在此处展示。")}</p></div>
@@ -1273,14 +1347,28 @@
         const url = new URL(AI_URL, window.location.href);
         url.searchParams.set("matchId", matchId);
         const response = await fetch(url.toString(), { cache: "no-store" });
-        if (!response.ok) throw new Error(`AI 分析请求失败，HTTP ${response.status}`);
-        const analysis = await response.json();
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.ok === false) {
+          const error = new Error(payload.error || `AI 分析请求失败，HTTP ${response.status}`);
+          error.status = response.status;
+          error.detail = payload.detail || payload;
+          throw error;
+        }
+        const analysis = payload;
         writeAiCache(matchId, analysis);
         if (panel) panel.outerHTML = renderAiPanel(match, analysis);
         showToast("AI 分析已生成。");
       } catch (error) {
-        if (panel) panel.outerHTML = renderAiPanel(match, readAiCache(matchId));
-        showToast(String(error?.message || "AI 分析暂时不可用。"));
+        console.error("AI analysis failed", {
+          matchId,
+          message: error?.message,
+          status: error?.status,
+          detail: error?.detail,
+          error
+        });
+        const message = error?.message || "AI 分析暂时不可用。";
+        if (panel) panel.outerHTML = renderAiPanel(match, readAiCache(matchId), message);
+        showToast(message);
       }
     }
 
@@ -1347,6 +1435,22 @@
 
     function teamMarkup(name) {
       return `<span class="team">${flagSvg(name)}<span>${escapeHtml(name)}</span></span>`;
+    }
+
+    function liveLink(match) {
+      if (match.placeholder) {
+        return `<span class="live-link disabled">直播入口待赛程生成</span>`;
+      }
+      const live = match.status === "live";
+      const label = live ? "LIVE 直播入口" : "官方赛程/直播入口";
+      return `<a class="live-link ${live ? "live" : ""}" href="${escapeHtml(liveUrl(match))}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+    }
+
+    function liveUrl(match) {
+      const params = new URLSearchParams({
+        q: `${match.home} ${match.away} ${match.stage} FIFA World Cup 2026 live`
+      });
+      return `https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/matches?${params.toString()}`;
     }
 
     function flagSvg(name) {

@@ -3,27 +3,66 @@ const DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions";
 const CACHE_TTL = 12 * 60 * 60 * 1000;
 const cache = new Map();
 
-const headers = {
-  "content-type": "application/json; charset=utf-8",
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, OPTIONS",
-  "access-control-allow-headers": "Content-Type"
+const corsHeaders = {
+  "Content-Type": "application/json; charset=utf-8",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
 };
 
 function json(statusCode, payload) {
-  return { statusCode, headers, body: JSON.stringify(payload) };
+  return { statusCode, headers: corsHeaders, body: JSON.stringify(payload) };
+}
+
+function fail(statusCode, message, detail) {
+  return json(statusCode, { ok: false, error: message, detail: detail || "" });
 }
 
 async function requestJson(url, options, label) {
-  const response = await fetch(url, options);
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = payload.message || payload.error?.message || `${label} failed, HTTP ${response.status}`;
-    const error = new Error(message);
-    error.statusCode = response.status;
-    throw error;
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    const err = new Error(`${label} network error`);
+    err.statusCode = 502;
+    err.detail = error.message;
+    throw err;
   }
+
+  const text = await response.text();
+  let payload = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { raw: text };
+  }
+
+  if (!response.ok) {
+    const message = payload.message || payload.error?.message || payload.error || `${label} failed`;
+    const err = new Error(message);
+    err.statusCode = response.status;
+    err.detail = payload;
+    throw err;
+  }
+
   return payload;
+}
+
+function parseDeepSeekContent(content) {
+  const raw = String(content || "").trim();
+  const cleaned = raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    const err = new Error("DeepSeek returned invalid JSON");
+    err.statusCode = 502;
+    err.detail = { content: raw.slice(0, 1200), parseError: error.message };
+    throw err;
+  }
 }
 
 function teamName(team) {
@@ -43,11 +82,7 @@ function playerPosition(player) {
 }
 
 function compactPlayer(player) {
-  return {
-    n: playerName(player),
-    p: playerPosition(player),
-    c: playerClub(player)
-  };
+  return { n: playerName(player), p: playerPosition(player), c: playerClub(player) };
 }
 
 function pickSide(match, side) {
@@ -61,12 +96,12 @@ function extractSquad(match, side) {
     sideData.startingXI ||
     sideData.startingLineup ||
     sideData.lineup ||
-    sideData.squad?.filter?.(p => p.role === "STARTING_LINEUP") ||
+    sideData.squad?.filter?.(player => player.role === "STARTING_LINEUP") ||
     [];
   const bench =
     sideData.substitutes ||
     sideData.bench ||
-    sideData.squad?.filter?.(p => p.role === "SUBSTITUTE") ||
+    sideData.squad?.filter?.(player => player.role === "SUBSTITUTE") ||
     [];
   return {
     id: team.id || sideData.teamId || sideData.id,
@@ -155,8 +190,8 @@ async function deepSeekAnalysis(content, apiKey) {
     {
       method: "POST",
       headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${apiKey}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: "deepseek-chat",
@@ -170,32 +205,41 @@ async function deepSeekAnalysis(content, apiKey) {
     },
     "DeepSeek request"
   );
-  const text = payload.choices?.[0]?.message?.content || "{}";
-  return JSON.parse(text);
+  const contentText = payload.choices?.[0]?.message?.content;
+  if (!contentText) {
+    const err = new Error("DeepSeek response missing content");
+    err.statusCode = 502;
+    err.detail = payload;
+    throw err;
+  }
+  return parseDeepSeekContent(contentText);
 }
 
 exports.handler = async event => {
-  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers, body: "" };
-
-  const matchId = event.queryStringParameters?.matchId;
-  if (!matchId) return json(400, { ok: false, error: "missing matchId" });
-
-  const cached = cache.get(matchId);
-  if (cached && cached.expires > Date.now()) return json(200, cached.data);
-
-  const footballKey = process.env.FOOTBALL_DATA_KEY;
-  const deepSeekKey = process.env.DEEPSEEK_KEY;
-  if (!footballKey) return json(500, { ok: false, error: "missing FOOTBALL_DATA_KEY" });
-  if (!deepSeekKey) return json(500, { ok: false, error: "missing DEEPSEEK_KEY" });
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: corsHeaders, body: "" };
 
   try {
-    const footballHeaders = { "X-Auth-Token": footballKey, accept: "application/json" };
+    const matchId = event.queryStringParameters?.matchId;
+    if (!matchId) return fail(400, "missing matchId");
 
-    const matchPayload = await requestJson(`${API_BASE}/matches/${encodeURIComponent(matchId)}`, { headers: footballHeaders }, "match detail");
+    const cached = cache.get(matchId);
+    if (cached && cached.expires > Date.now()) return json(200, cached.data);
+
+    const footballKey = process.env.FOOTBALL_DATA_KEY;
+    const deepSeekKey = process.env.DEEPSEEK_KEY;
+    if (!footballKey) return fail(500, "missing FOOTBALL_DATA_KEY");
+    if (!deepSeekKey) return fail(500, "missing DEEPSEEK_KEY");
+
+    const footballHeaders = { "X-Auth-Token": footballKey, Accept: "application/json" };
+    const matchPayload = await requestJson(
+      `${API_BASE}/matches/${encodeURIComponent(matchId)}`,
+      { headers: footballHeaders },
+      "match detail"
+    );
     const match = matchPayload.match || matchPayload;
     const home = extractSquad(match, "home");
     const away = extractSquad(match, "away");
-    if (!home.id || !away.id) return json(502, { ok: false, error: "match team id missing" });
+    if (!home.id || !away.id) return fail(502, "match team id missing", { home, away });
 
     const [homeMatches, awayMatches] = await Promise.all([
       requestJson(`${API_BASE}/teams/${home.id}/matches?status=FINISHED&limit=3`, { headers: footballHeaders }, "home recent matches"),
@@ -215,9 +259,7 @@ exports.handler = async event => {
     cache.set(matchId, { expires: Date.now() + CACHE_TTL, data: analysis });
     return json(200, analysis);
   } catch (error) {
-    return json(error.statusCode || 500, {
-      ok: false,
-      error: error.message || "analysis failed"
-    });
+    console.error("ai-analysis failed", error);
+    return fail(error.statusCode || 500, error.message || "analysis failed", error.detail || "");
   }
 };
