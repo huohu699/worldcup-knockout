@@ -45,7 +45,7 @@ exports.handler = async event => {
   if (!token) {
     return json(200, {
       ok: false,
-      error: "线上环境没有配置 FOOTBALL_DATA_TOKEN。请在部署平台的环境变量中添加它。",
+      error: "线上环境没有配置 FOOTBALL_DATA_TOKEN。请在 Netlify 站点环境变量中添加它。",
       matches: [],
       teams: [],
       standings: []
