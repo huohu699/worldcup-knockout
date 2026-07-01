@@ -946,7 +946,7 @@
   <main class="app">
     <header class="hero">
       <section>
-        <div class="eyebrow">World Cup 2026 Dashboard</div>
+        <div class="eyebrow">2026 世界杯实时情报中枢</div>
         <h1>2026 世界杯赛程看板</h1>
         <p class="subtitle">原生 HTML/CSS/JS · Netlify Functions 代理 football-data.org v4 · 本地时区展示 · 自动缓存与容错</p>
       </section>
@@ -1263,7 +1263,7 @@
     }
 
     function normalizeFeedMatches(matches) {
-      return (matches || []).map((match, index) => normalizeMatch(match, footballStageMap[match.stage] || match.group || `Matchday ${match.matchday || ""}`.trim(), index))
+      return (matches || []).map((match, index) => normalizeMatch(match, footballStageMap[match.stage] || match.group || `第 ${match.matchday || "-"} 比赛日`, index))
         .sort((a, b) => (Date.parse(a.utcDate) || 0) - (Date.parse(b.utcDate) || 0));
     }
 
@@ -1469,18 +1469,18 @@
       return `
         <aside class="intel-panel" aria-label="实时赛事情报">
           <section class="intel-card">
-            <div class="intel-head"><span>LIVE INTEL</span><span>${live.length ? "ON AIR" : "STANDBY"}</span></div>
+            <div class="intel-head"><span>实时情报</span><span>${live.length ? "直播中" : "待命"}</span></div>
             <div class="intel-body">
               <div class="stat-grid">
-                <div class="stat-tile"><strong>${live.length}</strong><span>Live matches</span></div>
-                <div class="stat-tile"><strong>${finished.length}</strong><span>Finished</span></div>
-                <div class="stat-tile"><strong>${totalGoals}</strong><span>Total goals</span></div>
-                <div class="stat-tile"><strong>${avgGoals}</strong><span>Goals / match</span></div>
+                <div class="stat-tile"><strong>${live.length}</strong><span>实时比赛</span></div>
+                <div class="stat-tile"><strong>${finished.length}</strong><span>已完赛</span></div>
+                <div class="stat-tile"><strong>${totalGoals}</strong><span>总进球</span></div>
+                <div class="stat-tile"><strong>${avgGoals}</strong><span>场均进球</span></div>
               </div>
             </div>
           </section>
           <section class="intel-card">
-            <div class="intel-head"><span>Momentum</span><span>Attack Index</span></div>
+            <div class="intel-head"><span>比赛动量</span><span>进攻指数</span></div>
             <div class="intel-body">
               ${momentum.map(row => `
                 <div class="meter-row">
@@ -1491,9 +1491,9 @@
             </div>
           </section>
           <section class="intel-card">
-            <div class="intel-head"><span>Upset Alerts</span><span>${alerts.length}</span></div>
+            <div class="intel-head"><span>爆冷预警</span><span>${alerts.length}</span></div>
             <div class="intel-body">
-              ${alerts.length ? alerts.map(alert => `<div class="alert-row">${escapeHtml(alert)}</div>`).join("") : `<div class="alert-row">No major upset pressure detected yet.</div>`}
+              ${alerts.length ? alerts.map(alert => `<div class="alert-row">${escapeHtml(alert)}</div>`).join("") : `<div class="alert-row">暂未检测到明显爆冷压力。</div>`}
             </div>
           </section>
         </aside>
@@ -1754,7 +1754,7 @@
 
     function liveUrl(match) {
       const params = new URLSearchParams({
-        q: `${match.home} ${match.away} ${match.stage} FIFA World Cup 2026 live`
+        q: `${match.home} ${match.away} ${match.stage} 2026 世界杯 直播`
       });
       return `https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/matches?${params.toString()}`;
     }
