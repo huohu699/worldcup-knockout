@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -121,6 +121,21 @@
 
     .chip strong { color: var(--text); }
 
+    .tz-select {
+      max-width: 178px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .tz-select option {
+      color: #091a32;
+      background: #fff;
+    }
+
     .dot {
       width: 8px;
       height: 8px;
@@ -144,7 +159,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
       margin-bottom: 16px;
       padding: 8px;
@@ -336,18 +351,34 @@
 
     .bracket-area {
       position: relative;
-      min-height: 680px;
+      height: min(760px, calc(100vh - 260px));
+      min-height: 520px;
       overflow: auto;
+      overscroll-behavior: contain;
+    }
+
+    .bracket-area::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .bracket-area::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(255,255,255,.2);
     }
 
     .bracket-stage-labels {
       position: relative;
-      z-index: 2;
-      min-width: 1120px;
+      top: auto;
+      z-index: 8;
+      min-width: 1490px;
       display: grid;
       grid-template-columns: repeat(6, 1fr);
       gap: 18px;
-      margin-bottom: 12px;
+      margin-bottom: 0;
+      padding: 0 0 14px;
+      background: linear-gradient(180deg, rgba(8,27,57,.98), rgba(8,27,57,.86));
+      box-shadow: 0 16px 24px rgba(2, 8, 20, .28);
     }
 
     .bracket-stage-labels div {
@@ -363,8 +394,9 @@
 
     .bracket-canvas {
       position: relative;
-      min-width: 1120px;
+      min-width: 1490px;
       min-height: 620px;
+      margin-top: 22px;
     }
 
     .bracket-svg {
@@ -378,9 +410,9 @@
 
     .bracket-match {
       position: absolute;
-      width: 170px;
-      min-height: 106px;
-      padding: 10px;
+      width: 188px;
+      min-height: 98px;
+      padding: 10px 12px;
       border: 1px solid var(--line);
       border-radius: 13px;
       background: rgba(255,255,255,.08);
@@ -397,6 +429,13 @@
     .bracket-match.advanced {
       border-color: var(--line2);
       box-shadow: 0 0 0 1px rgba(246,199,89,.18), 0 0 22px rgba(246,199,89,.13);
+    }
+
+    .bracket-match.placeholder {
+      color: var(--muted2);
+      background: rgba(255,255,255,.045);
+      border-style: dashed;
+      filter: grayscale(.18);
     }
 
     .bracket-team {
@@ -416,6 +455,21 @@
     .bracket-team.lose {
       opacity: .55;
       filter: grayscale(.25);
+    }
+
+    .bracket-note {
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      width: fit-content;
+      max-width: 520px;
+      margin-bottom: 12px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      color: var(--muted);
+      font-size: 12px;
     }
 
     .stats-grid {
@@ -527,7 +581,9 @@
     .modal.show { display: grid; }
 
     .detail-card {
-      width: min(520px, 100%);
+      width: min(760px, 100%);
+      max-height: min(86vh, 760px);
+      overflow: auto;
       padding: 18px;
       background: linear-gradient(180deg, var(--panel), #06162f);
       box-shadow: var(--shadow);
@@ -555,25 +611,82 @@
       cursor: pointer;
     }
 
+    .ai-panel {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid rgba(246, 199, 89, .28);
+      border-radius: 13px;
+      background: linear-gradient(135deg, rgba(246,199,89,.1), rgba(42,192,117,.045));
+    }
+
+    .ai-head,
+    .ai-total {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ai-head strong {
+      color: var(--gold2);
+      font-size: 15px;
+    }
+
+    .ai-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .ai-box {
+      min-height: 88px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: rgba(255,255,255,.055);
+    }
+
+    .ai-box span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .ai-box p {
+      margin: 0;
+      color: #dce7f7;
+      font-size: 13px;
+    }
+
+    .ai-action {
+      min-height: 32px;
+      padding: 0 11px;
+      border: 1px solid rgba(246,199,89,.38);
+      border-radius: 999px;
+      background: rgba(246,199,89,.12);
+      color: var(--gold2);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ai-action:disabled {
+      cursor: not-allowed;
+      color: var(--muted2);
+      border-color: var(--line);
+      background: rgba(255,255,255,.045);
+    }
+
     @media (max-width: 980px) {
       .hero { grid-template-columns: 1fr; }
       .toolbar { justify-content: stretch; }
       .chip, .btn { flex: 1 1 auto; justify-content: center; }
+      .tz-select { max-width: 100%; }
       .schedule-grid { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: 1fr; }
-      .bracket-area { min-height: 0; }
-      .bracket-stage-labels { display: none; }
-      .bracket-canvas {
-        min-width: 0;
-        min-height: 0;
-        display: grid;
-        gap: 12px;
-      }
-      .bracket-svg { display: none; }
-      .bracket-match {
-        position: static;
-        width: auto;
-      }
+      .ai-grid { grid-template-columns: 1fr; }
+      .bracket-area { height: min(720px, calc(100vh - 230px)); min-height: 460px; }
     }
 
     @media (max-width: 620px) {
@@ -594,7 +707,19 @@
       </section>
       <div class="toolbar">
         <div class="chip"><span id="netDot" class="dot"></span><span id="netText">等待同步</span></div>
-        <div class="chip">时区 <strong id="tzText">-</strong></div>
+        <label class="chip">时区
+          <select id="tzSelect" class="tz-select" aria-label="切换时区">
+            <option value="local">本地时区</option>
+            <option value="Asia/Shanghai">北京时间</option>
+            <option value="America/New_York">纽约/新泽西</option>
+            <option value="America/Los_Angeles">洛杉矶/温哥华</option>
+            <option value="America/Chicago">达拉斯/休斯敦</option>
+            <option value="America/Denver">丹佛</option>
+            <option value="America/Toronto">多伦多</option>
+            <option value="America/Mexico_City">墨西哥城</option>
+            <option value="UTC">UTC</option>
+          </select>
+        </label>
         <button id="refreshBtn" class="btn" type="button">刷新数据</button>
       </div>
     </header>
@@ -602,7 +727,6 @@
     <nav class="tabs" aria-label="看板切换">
       <button class="tab active" data-tab="schedule" type="button">赛程日历</button>
       <button class="tab" data-tab="bracket" type="button">淘汰赛对阵</button>
-      <button class="tab" data-tab="stats" type="button">数据统计</button>
     </nav>
 
     <div class="meta-row">
@@ -635,18 +759,6 @@
       </div>
     </section>
 
-    <section id="statsView" class="view">
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5M8 17v-6M13 17V7M18 17v-9M3 19h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <h2>数据统计</h2>
-          </div>
-          <span>射手榜 / 球队进球 / 爆冷场次</span>
-        </div>
-        <div id="statsPanel" class="panel-body"></div>
-      </div>
-    </section>
   </main>
 
   <div id="toast" class="toast" hidden></div>
@@ -667,7 +779,11 @@
     const DATA_URL = location.protocol === "file:"
       ? "http://127.0.0.1:8765/api/fixtures"
       : "/api/fixtures";
+    const AI_URL = location.protocol === "file:"
+      ? "http://127.0.0.1:8765/api/ai-analysis"
+      : "/api/ai-analysis";
     const CACHE_KEY = "wc26:dashboard:v2";
+    const AI_CACHE_KEY = "wc26:ai-analysis:";
     const CACHE_TTL = 30 * 60 * 1000;
     const REFRESH_INTERVAL = 10 * 60 * 1000;
 
@@ -687,8 +803,8 @@
       { name: "1/8决赛", expected: 8 },
       { name: "1/4决赛", expected: 4 },
       { name: "半决赛", expected: 2 },
-      { name: "三四名决赛", expected: 1 },
-      { name: "决赛", expected: 1 }
+      { name: "决赛", expected: 1 },
+      { name: "三四名决赛", expected: 1 }
     ];
 
     const statusMap = {
@@ -705,18 +821,33 @@
     };
 
     const teamNames = {
-      Argentina: "阿根廷", Australia: "澳大利亚", Belgium: "比利时", Brazil: "巴西", Canada: "加拿大",
-      Croatia: "克罗地亚", Denmark: "丹麦", England: "英格兰", France: "法国", Germany: "德国",
-      Japan: "日本", "Korea Republic": "韩国", Mexico: "墨西哥", Morocco: "摩洛哥", Netherlands: "荷兰",
-      Portugal: "葡萄牙", Senegal: "塞内加尔", Spain: "西班牙", Switzerland: "瑞士", USA: "美国",
-      "United States": "美国", Uruguay: "乌拉圭"
+      Argentina: "阿根廷", Australia: "澳大利亚", Austria: "奥地利", Belgium: "比利时", Brazil: "巴西",
+      Cameroon: "喀麦隆", Canada: "加拿大", Chile: "智利", "China PR": "中国", Colombia: "哥伦比亚",
+      "Costa Rica": "哥斯达黎加", Croatia: "克罗地亚", Denmark: "丹麦", Ecuador: "厄瓜多尔", Egypt: "埃及",
+      England: "英格兰", France: "法国", Germany: "德国", Ghana: "加纳", Greece: "希腊", Iran: "伊朗",
+      Italy: "意大利", Japan: "日本", "Korea Republic": "韩国", "South Korea": "韩国", Mexico: "墨西哥",
+      Morocco: "摩洛哥", Netherlands: "荷兰", Nigeria: "尼日利亚", Norway: "挪威", Paraguay: "巴拉圭",
+      Peru: "秘鲁", Poland: "波兰", Portugal: "葡萄牙", Qatar: "卡塔尔", "Saudi Arabia": "沙特阿拉伯",
+      Scotland: "苏格兰", Senegal: "塞内加尔", Serbia: "塞尔维亚", "South Africa": "南非", Spain: "西班牙",
+      Sweden: "瑞典", Switzerland: "瑞士", Tunisia: "突尼斯", Turkey: "土耳其", "Türkiye": "土耳其",
+      USA: "美国", "United States": "美国", Uruguay: "乌拉圭", Wales: "威尔士", Ukraine: "乌克兰",
+      "United Arab Emirates": "阿联酋", Bolivia: "玻利维亚", Venezuela: "委内瑞拉", Jamaica: "牙买加",
+      Panama: "巴拿马", Honduras: "洪都拉斯", "Côte d’Ivoire": "科特迪瓦", "Cote d'Ivoire": "科特迪瓦",
+      Algeria: "阿尔及利亚", Mali: "马里", "DR Congo": "民主刚果", "Congo DR": "民主刚果",
+      Uzbekistan: "乌兹别克斯坦", Jordan: "约旦", Iraq: "伊拉克", Indonesia: "印度尼西亚", "New Zealand": "新西兰"
     };
 
     const flagCodes = {
-      阿根廷: "AR", 澳大利亚: "AU", 比利时: "BE", 巴西: "BR", 加拿大: "CA", 克罗地亚: "HR",
-      丹麦: "DK", 英格兰: "GB-ENG", 法国: "FR", 德国: "DE", 日本: "JP", 韩国: "KR",
-      墨西哥: "MX", 摩洛哥: "MA", 荷兰: "NL", 葡萄牙: "PT", 塞内加尔: "SN", 西班牙: "ES",
-      瑞士: "CH", 美国: "US", 乌拉圭: "UY"
+      阿根廷: "AR", 澳大利亚: "AU", 奥地利: "AT", 比利时: "BE", 巴西: "BR", 喀麦隆: "CM", 加拿大: "CA",
+      智利: "CL", 中国: "CN", 哥伦比亚: "CO", 哥斯达黎加: "CR", 克罗地亚: "HR", 丹麦: "DK",
+      厄瓜多尔: "EC", 埃及: "EG", 英格兰: "GB-ENG", 法国: "FR", 德国: "DE", 加纳: "GH", 希腊: "GR",
+      伊朗: "IR", 意大利: "IT", 日本: "JP", 韩国: "KR", 墨西哥: "MX", 摩洛哥: "MA", 荷兰: "NL",
+      尼日利亚: "NG", 挪威: "NO", 巴拉圭: "PY", 秘鲁: "PE", 波兰: "PL", 葡萄牙: "PT", 卡塔尔: "QA",
+      沙特阿拉伯: "SA", 苏格兰: "GB-SCT", 塞内加尔: "SN", 塞尔维亚: "RS", 南非: "ZA", 西班牙: "ES",
+      瑞典: "SE", 瑞士: "CH", 突尼斯: "TN", 土耳其: "TR", 美国: "US", 乌拉圭: "UY", 威尔士: "GB-WLS",
+      乌克兰: "UA", 阿联酋: "AE", 玻利维亚: "BO", 委内瑞拉: "VE", 牙买加: "JM", 巴拿马: "PA",
+      洪都拉斯: "HN", 科特迪瓦: "CI", 阿尔及利亚: "DZ", 马里: "ML", 民主刚果: "CD", 乌兹别克斯坦: "UZ",
+      约旦: "JO", 伊拉克: "IQ", 印度尼西亚: "ID", 新西兰: "NZ", 待定: "TBD"
     };
 
     const venues = [
@@ -724,11 +855,12 @@
       ["AT&T 体育场", "达拉斯"], ["NRG 体育场", "休斯敦"], ["SoFi 体育场", "洛杉矶"],
       ["阿兹特克体育场", "墨西哥城"], ["大都会人寿体育场", "纽约/新泽西"]
     ];
-
     const state = {
       matches: [],
+      bracketSlots: [],
       rawMatches: [],
       activeTab: "schedule",
+      timeZone: localStorage.getItem("wc26:timezone") || "local",
       lastUpdated: null,
       emptyReason: "",
       timer: null
@@ -737,13 +869,12 @@
     const els = {
       netDot: document.querySelector("#netDot"),
       netText: document.querySelector("#netText"),
-      tzText: document.querySelector("#tzText"),
+      tzSelect: document.querySelector("#tzSelect"),
       updatedAt: document.querySelector("#updatedAt"),
       refreshBtn: document.querySelector("#refreshBtn"),
       scheduleCount: document.querySelector("#scheduleCount"),
       scheduleList: document.querySelector("#scheduleList"),
       bracketArea: document.querySelector("#bracketArea"),
-      statsPanel: document.querySelector("#statsPanel"),
       toast: document.querySelector("#toast"),
       modal: document.querySelector("#modal"),
       modalTitle: document.querySelector("#modalTitle"),
@@ -755,7 +886,7 @@
     init();
 
     function init() {
-      els.tzText.textContent = localTimezone();
+      els.tzSelect.value = state.timeZone;
       bindEvents();
       renderLoading();
       const cached = readCache();
@@ -776,12 +907,24 @@
         document.querySelectorAll(".view").forEach(view => view.classList.remove("active"));
         document.querySelector(`#${state.activeTab}View`).classList.add("active");
       });
+      els.tzSelect.addEventListener("change", () => {
+        state.timeZone = els.tzSelect.value;
+        localStorage.setItem("wc26:timezone", state.timeZone);
+        renderAll();
+        updateTimestamp();
+        showToast(`已切换至${timeZoneLabel()}。`);
+      });
       els.refreshBtn.addEventListener("click", () => refresh(false));
       els.bracketArea.addEventListener("click", event => {
         const card = event.target.closest(".bracket-match");
         if (!card) return;
-        const match = state.matches.find(item => item.id === card.dataset.id);
+        const match = state.bracketSlots.find(item => item.id === card.dataset.id);
         if (match) openDetail(match);
+      });
+      document.addEventListener("click", event => {
+        const button = event.target.closest("[data-ai-match]");
+        if (!button) return;
+        loadAiAnalysis(button.dataset.aiMatch);
       });
       els.modalClose.addEventListener("click", closeDetail);
       els.modal.addEventListener("click", event => {
@@ -796,7 +939,6 @@
       const loading = emptyState("正在同步", "正在连接 football-data.org v4 数据源。");
       els.scheduleList.innerHTML = loading;
       els.bracketArea.innerHTML = loading;
-      els.statsPanel.innerHTML = loading;
     }
 
     async function refresh(silent) {
@@ -844,7 +986,6 @@
       renderAll();
       updateTimestamp(fromCache);
     }
-
     function normalizeMatches(matches) {
       return matches.map((match, index) => {
         const stage = footballStageMap[match.stage];
@@ -874,7 +1015,6 @@
     function renderAll() {
       renderSchedule();
       renderBracket();
-      renderStats();
     }
 
     function renderSchedule() {
@@ -892,7 +1032,6 @@
         </section>
       `).join("");
     }
-
     function renderScheduleCard(match) {
       return `
         <article class="match-card">
@@ -910,12 +1049,14 @@
     }
 
     function renderBracket() {
-      if (!state.matches.length) {
-        els.bracketArea.innerHTML = emptyState("淘汰赛对阵", "小组赛结束后自动生成 SVG 树状对阵。");
-        return;
-      }
-      const layout = bracketLayout(state.matches);
+      const slots = bracketSlots(state.matches);
+      state.bracketSlots = slots;
+      const layout = bracketLayout(slots);
+      const note = state.matches.length
+        ? "点击任意比赛卡查看详情；晋级路径会随官方结果自动高亮。"
+        : "小组赛结束后自动生成完整对阵；当前先展示淘汰赛槽位结构。";
       els.bracketArea.innerHTML = `
+        <div class="bracket-note">${escapeHtml(note)}</div>
         <div class="bracket-stage-labels">${stages.map(stage => `<div>${escapeHtml(stage.name)}</div>`).join("")}</div>
         <div class="bracket-canvas" style="height:${layout.height}px">
           <svg class="bracket-svg" viewBox="0 0 ${layout.width} ${layout.height}" preserveAspectRatio="none">
@@ -925,13 +1066,12 @@
         </div>
       `;
     }
-
     function renderBracketNode(match, item) {
       const homeWin = match.winner === "HOME_TEAM";
       const awayWin = match.winner === "AWAY_TEAM";
       return `
-        <article class="bracket-match ${match.winner ? "advanced" : ""}" data-id="${escapeHtml(match.id)}" style="left:${item.x}px;top:${item.y}px">
-          <div class="bracket-time"><span>${escapeHtml(match.stage)}</span><span>${escapeHtml(shortTime(match.utcDate))}</span></div>
+        <article class="bracket-match ${match.winner ? "advanced" : ""} ${match.placeholder ? "placeholder" : ""}" data-id="${escapeHtml(match.id)}" style="left:${item.x}px;top:${item.y}px">
+          <div class="bracket-time"><span>${escapeHtml(match.slotLabel || match.stage)}</span><span>${escapeHtml(shortTime(match.utcDate))}</span></div>
           <div class="bracket-team ${homeWin ? "win" : awayWin ? "lose" : ""}">${teamMarkup(match.home)}<span class="score">${escapeHtml(match.homeScore)}</span></div>
           <div class="bracket-team ${awayWin ? "win" : homeWin ? "lose" : ""}">${teamMarkup(match.away)}<span class="score">${escapeHtml(match.awayScore)}</span></div>
           <div class="score-detail">${escapeHtml(scoreDetail(match))}</div>
@@ -939,46 +1079,84 @@
       `;
     }
 
+    function bracketSlots(matches) {
+      return stages.flatMap(stage => {
+        const real = matches.filter(match => match.stage === stage.name);
+        return Array.from({ length: stage.expected }, (_, index) => real[index] || placeholderMatch(stage.name, index));
+      });
+    }
+
+    function placeholderMatch(stage, index) {
+      return {
+        id: `placeholder-${stage}-${index}`,
+        stage,
+        slotLabel: `${stage} ${String(index + 1).padStart(2, "0")}`,
+        utcDate: "",
+        status: "todo",
+        home: "待定",
+        away: "待定",
+        homeScore: "-",
+        awayScore: "-",
+        score: { regular: ["-", "-"], extra: ["-", "-"], penalties: ["-", "-"] },
+        winner: null,
+        venue: "场馆待定",
+        city: "城市待定",
+        events: [],
+        placeholder: true
+      };
+    }
+
     function bracketLayout(matches) {
-      const width = 1120;
-      const cardW = 170;
-      const cardH = 106;
-      const colGap = (width - cardW) / Math.max(1, stages.length - 1);
+      const cardW = 188;
+      const cardH = 98;
+      const colGap = 260;
+      const width = cardW + colGap * (stages.length - 1) + 48;
+      const rowGap = 112;
+      const top = 16;
       const nodes = [];
       for (const stage of stages) {
         const stageMatches = matches.filter(match => match.stage === stage.name);
         const col = stageIndex(stage.name);
-        const gap = Math.max(122, 620 / Math.max(1, stageMatches.length));
         stageMatches.forEach((match, index) => {
+          const group = stage.name === "三四名决赛" ? 16 : Math.max(1, 2 ** col);
+          let y = top + (index * group + group / 2 - .5) * rowGap;
+          if (stage.name === "决赛") y = top + (16 / 2 - .5) * rowGap;
+          if (stage.name === "三四名决赛") y = top + (16 / 2 + 1.35) * rowGap;
           nodes.push({
             match,
+            index,
+            col,
             x: Math.round(col * colGap),
-            y: Math.round(index * gap + 8),
+            y: Math.round(y),
             centerX: Math.round(col * colGap + cardW),
-            centerY: Math.round(index * gap + 8 + cardH / 2)
+            centerY: Math.round(y + cardH / 2)
           });
         });
       }
-      const nodeByMatch = new Map(nodes.map(node => [node.match.id, node]));
+      const nodesByStage = new Map();
+      for (const node of nodes) {
+        if (!nodesByStage.has(node.match.stage)) nodesByStage.set(node.match.stage, []);
+        nodesByStage.get(node.match.stage).push(node);
+      }
       const lines = [];
       for (const node of nodes) {
-        const winner = winnerName(node.match);
-        if (!winner || node.match.stage === "决赛" || node.match.stage === "三四名决赛") continue;
-        const target = matches.find(match => stageIndex(match.stage) === stageIndex(node.match.stage) + 1 && [match.home, match.away].includes(winner));
-        if (!target) continue;
-        const targetNode = nodeByMatch.get(target.id);
+        if (node.match.stage === "决赛" || node.match.stage === "三四名决赛") continue;
+        const targetStage = stages[node.col + 1]?.name;
+        if (!targetStage) continue;
+        const targetNode = nodesByStage.get(targetStage)?.[Math.floor(node.index / 2)];
         if (!targetNode) continue;
         const x1 = node.x + cardW;
         const y1 = node.y + cardH / 2;
         const x2 = targetNode.x;
         const y2 = targetNode.y + cardH / 2;
         const mid = x1 + Math.max(24, (x2 - x1) / 2);
-        lines.push({ active: true, d: `M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}` });
+        const winner = winnerName(node.match);
+        const active = Boolean(winner && [targetNode.match.home, targetNode.match.away].includes(winner));
+        lines.push({ active, d: `M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}` });
       }
-      const height = Math.max(620, ...nodes.map(node => node.y + cardH + 20));
+      const height = Math.max(760, ...nodes.map(node => node.y + cardH + 24));
       return { width, height, nodes, lines };
     }
-
     function renderStats() {
       if (!state.matches.length) {
         els.statsPanel.innerHTML = emptyState("数据统计", "赛事开始后解锁射手榜、球队进球与爆冷场次。");
@@ -995,7 +1173,6 @@
         </div>
       `;
     }
-
     function rankList(rows, suffix) {
       const safeRows = rows.length ? rows : [{ label: "等待官方数据", value: 0 }];
       const max = Math.max(1, ...safeRows.map(row => row.value));
@@ -1053,8 +1230,81 @@
           <div class="score-detail">${escapeHtml(scoreDetail(match))}</div>
           <div class="venue">状态：${statusText(match.status)}</div>
         </div>
+        ${renderAiPanel(match)}
       `;
       els.modal.classList.add("show");
+    }
+
+    function renderAiPanel(match, analysis) {
+      const cached = analysis || readAiCache(match.id);
+      const disabled = match.placeholder || !/^\d+$/.test(match.id);
+      const total = cached?.total ? `${cached.total.home ?? 0} : ${cached.total.away ?? 0}` : "-- : --";
+      const conclusion = cached?.conclusion || (disabled
+        ? "官方淘汰赛 matchId 生成后，可在这里拉取 DeepSeek 量化分析。"
+        : "已接入 ai-analysis Netlify 函数，可生成阵容评分、对位、近况复盘和胜负结论。");
+      const matchup = cached?.matchup || "预置字段：全线对位、绝对优势线、比赛节奏与风险点。";
+      const reviewHome = cached?.review?.home || `${match.home} 近 3 场复盘将在官方数据同步后展示。`;
+      const reviewAway = cached?.review?.away || `${match.away} 近 3 场复盘将在官方数据同步后展示。`;
+      const buttonText = cached ? "刷新AI分析" : disabled ? "等待比赛ID" : "生成AI分析";
+      return `
+        <section class="ai-panel" id="aiPanel">
+          <div class="ai-head">
+            <strong>AI 量化分析</strong>
+            <button class="ai-action" type="button" data-ai-match="${escapeHtml(match.id)}" ${disabled ? "disabled" : ""}>${buttonText}</button>
+          </div>
+          <div class="ai-total"><span class="venue">综合评分</span><strong>${escapeHtml(total)}</strong></div>
+          <div class="ai-grid">
+            <div class="ai-box"><span>阵容与健康</span><p>${escapeHtml(lineupPreview(cached, "home") || "首发11人 + 3名关键替补，含俱乐部、位置、伤病与体能评分。")}</p></div>
+            <div class="ai-box"><span>客队阵容</span><p>${escapeHtml(lineupPreview(cached, "away") || "客队首发、替补深度、黄牌风险与体能消耗将在此处展示。")}</p></div>
+            <div class="ai-box"><span>全线对位</span><p>${escapeHtml(matchup)}</p></div>
+            <div class="ai-box"><span>近期复盘</span><p>${escapeHtml(`${reviewHome} ${reviewAway}`)}</p></div>
+          </div>
+          <div class="ai-box" style="margin-top:10px"><span>结论</span><p>${escapeHtml(conclusion)}</p></div>
+        </section>
+      `;
+    }
+
+    async function loadAiAnalysis(matchId) {
+      const match = state.bracketSlots.find(item => item.id === matchId) || state.matches.find(item => item.id === matchId);
+      if (!match || match.placeholder) return;
+      const panel = document.querySelector("#aiPanel");
+      if (panel) panel.innerHTML = `<div class="ai-head"><strong>AI 量化分析</strong><button class="ai-action" type="button" disabled>生成中...</button></div><div class="ai-box" style="margin-top:12px"><span>DeepSeek</span><p>正在读取单场详情、两队近3场完赛数据并生成紧凑 JSON。</p></div>`;
+      try {
+        const url = new URL(AI_URL, window.location.href);
+        url.searchParams.set("matchId", matchId);
+        const response = await fetch(url.toString(), { cache: "no-store" });
+        if (!response.ok) throw new Error(`AI 分析请求失败，HTTP ${response.status}`);
+        const analysis = await response.json();
+        writeAiCache(matchId, analysis);
+        if (panel) panel.outerHTML = renderAiPanel(match, analysis);
+        showToast("AI 分析已生成。");
+      } catch (error) {
+        if (panel) panel.outerHTML = renderAiPanel(match, readAiCache(matchId));
+        showToast(String(error?.message || "AI 分析暂时不可用。"));
+      }
+    }
+
+    function lineupPreview(analysis, side) {
+      const rows = analysis?.lineup?.[side];
+      if (!Array.isArray(rows) || !rows.length) return "";
+      return rows.slice(0, 3).map(player => {
+        if (typeof player === "string") return player;
+        return [player.name, player.position, player.club].filter(Boolean).join(" · ");
+      }).join(" / ");
+    }
+
+    function writeAiCache(matchId, payload) {
+      localStorage.setItem(`${AI_CACHE_KEY}${matchId}`, JSON.stringify({ payload, expires: Date.now() + 12 * 60 * 60 * 1000 }));
+    }
+
+    function readAiCache(matchId) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(`${AI_CACHE_KEY}${matchId}`));
+        if (!cached || cached.expires < Date.now()) return null;
+        return cached.payload;
+      } catch {
+        return null;
+      }
     }
 
     function closeDetail() {
@@ -1112,15 +1362,15 @@
         DE: ["#000", "#dd0000", "#ffce00"], JP: ["#fff", "#bc002d", "#fff"], KR: ["#fff", "#cd2e3a", "#0047a0"],
         MX: ["#006847", "#fff", "#ce1126"], MA: ["#c1272d", "#006233", "#c1272d"], NL: ["#ae1c28", "#fff", "#21468b"],
         PT: ["#006600", "#ff0000", "#ffcc00"], SN: ["#00853f", "#fdef42", "#e31b23"], ES: ["#aa151b", "#f1bf00", "#aa151b"],
-        CH: ["#d52b1e", "#fff", "#d52b1e"], US: ["#b22234", "#fff", "#3c3b6e"], UY: ["#fff", "#0038a8", "#fcd116"]
+        CH: ["#d52b1e", "#fff", "#d52b1e"], US: ["#b22234", "#fff", "#3c3b6e"], UY: ["#fff", "#0038a8", "#fcd116"], AT: ["#ed2939", "#fff", "#ed2939"], CM: ["#007a5e", "#ce1126", "#fcd116"], CL: ["#fff", "#0039a6", "#d52b1e"], CN: ["#de2910", "#ffde00", "#de2910"], CO: ["#fcd116", "#003893", "#ce1126"], CR: ["#002b7f", "#fff", "#ce1126"], EC: ["#ffdd00", "#034ea2", "#ed1c24"], EG: ["#ce1126", "#fff", "#000"], GH: ["#ce1126", "#fcd116", "#006b3f"], GR: ["#0d5eaf", "#fff", "#0d5eaf"], IR: ["#239f40", "#fff", "#da0000"], IT: ["#009246", "#fff", "#ce2b37"], NG: ["#008751", "#fff", "#008751"], NO: ["#ba0c2f", "#fff", "#00205b"], PY: ["#d52b1e", "#fff", "#0038a8"], PE: ["#d91023", "#fff", "#d91023"], PL: ["#fff", "#dc143c", "#dc143c"], QA: ["#8a1538", "#fff", "#8a1538"], SA: ["#006c35", "#fff", "#006c35"], "GB-SCT": ["#0065bd", "#fff", "#0065bd"], RS: ["#c6363c", "#0c4076", "#fff"], ZA: ["#007a4d", "#fff", "#de3831"], SE: ["#006aa7", "#fecc00", "#006aa7"], TN: ["#e70013", "#fff", "#e70013"], TR: ["#e30a17", "#fff", "#e30a17"], "GB-WLS": ["#fff", "#d30731", "#00ad36"], UA: ["#0057b7", "#ffd700", "#ffd700"], AE: ["#00732f", "#fff", "#000"], BO: ["#d52b1e", "#f9e300", "#007934"], VE: ["#ffcc00", "#00247d", "#cf142b"], JM: ["#009b3a", "#fed100", "#000"], PA: ["#fff", "#005293", "#d21034"], HN: ["#0073cf", "#fff", "#0073cf"], CI: ["#f77f00", "#fff", "#009e60"], DZ: ["#006233", "#fff", "#d21034"], ML: ["#14b53a", "#fcd116", "#ce1126"], CD: ["#007fff", "#f7d618", "#ce1021"], UZ: ["#1eb5e5", "#fff", "#009739"], JO: ["#000", "#fff", "#007a3d"], IQ: ["#ce1126", "#fff", "#000"], ID: ["#ce1126", "#fff", "#fff"], NZ: ["#00247d", "#fff", "#cc142b"], TBD: ["#c7b56a", "#d9ca85", "#b09a4d"]
       };
       return palettes[code] || ["#d7dee9", "#f8fafc", "#aab7c8"];
     }
 
     function normalizeTeam(team) {
-      const name = team?.shortName || team?.name || "待定";
-      if (name === "TBD" || name === "To Be Determined") return "待定";
-      return teamNames[name] || name;
+      const raw = team?.shortName || team?.name || "待定";
+      if (["TBD", "To Be Determined", "待定"].includes(raw)) return "待定";
+      return teamNames[raw] || raw;
     }
 
     function scoreParts(score) {
@@ -1186,29 +1436,51 @@
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-        timeZoneName: "short"
+        timeZoneName: "short",
+        timeZone: selectedTimeZone()
       }).format(date);
     }
 
     function shortTime(value) {
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return "待定";
-      return new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+      return new Intl.DateTimeFormat("zh-CN", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: selectedTimeZone()
+      }).format(date);
     }
 
     function formatLocalDay(value) {
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return "时间待定";
-      return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "short" }).format(date);
+      return new Intl.DateTimeFormat("zh-CN", {
+        month: "long",
+        day: "numeric",
+        weekday: "short",
+        timeZone: selectedTimeZone()
+      }).format(date);
     }
 
     function localTimezone() {
       return Intl.DateTimeFormat().resolvedOptions().timeZone || "本地时区";
     }
 
+    function selectedTimeZone() {
+      return state.timeZone === "local" ? localTimezone() : state.timeZone;
+    }
+
+    function timeZoneLabel() {
+      const option = els.tzSelect?.selectedOptions?.[0];
+      return option?.textContent || selectedTimeZone();
+    }
+
     function updateTimestamp(fromCache) {
       const label = state.lastUpdated ? formatLocalTime(state.lastUpdated) : "尚未同步";
-      els.updatedAt.textContent = `最后更新时间：${label}（${localTimezone()}${fromCache ? " · 缓存" : ""}）`;
+      els.updatedAt.textContent = `最后更新时间：${label}（${timeZoneLabel()}${fromCache ? " · 缓存" : ""}）`;
     }
 
     function setNetwork(type, text) {
@@ -1228,7 +1500,7 @@
     function friendlyError(error) {
       const message = String(error?.message || error || "");
       if (message.includes("429") || message.includes("限流")) return "football-data.org 接口限流，稍后会自动重试。";
-      if (message.includes("FOOTBALL_DATA_TOKEN")) return "Netlify 环境变量 FOOTBALL_DATA_TOKEN 未配置。";
+      if (message.includes("FOOTBALL_DATA_TOKEN") || message.includes("FOOTBALL_DATA_KEY")) return "Netlify 环境变量 FOOTBALL_DATA_KEY 未配置。";
       return "暂时无法获取实时数据，已显示缓存或空状态。";
     }
 
@@ -1259,3 +1531,10 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
