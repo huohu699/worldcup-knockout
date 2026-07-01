@@ -225,7 +225,7 @@ exports.handler = async event => {
     const cached = cache.get(matchId);
     if (cached && cached.expires > Date.now()) return json(200, cached.data);
 
-    const footballKey = process.env.FOOTBALL_DATA_KEY;
+    const footballKey = process.env.FOOTBALL_DATA_KEY || process.env.FOOTBALL_DATA_TOKEN;
     const deepSeekKey = process.env.DEEPSEEK_KEY;
     if (!footballKey) return fail(500, "missing FOOTBALL_DATA_KEY");
     if (!deepSeekKey) return fail(500, "missing DEEPSEEK_KEY");
