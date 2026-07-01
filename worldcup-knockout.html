@@ -34,9 +34,9 @@
       min-width: 320px;
       min-height: 100vh;
       background:
-        radial-gradient(circle at 14% 0%, rgba(246, 199, 89, .18), transparent 32%),
-        radial-gradient(circle at 88% 10%, rgba(42, 192, 117, .15), transparent 28%),
-        linear-gradient(135deg, #020817, var(--bg) 52%, #06271e);
+        radial-gradient(circle at 12% -4%, rgba(42, 255, 151, .22), transparent 30%),
+        radial-gradient(circle at 84% 10%, rgba(246, 199, 89, .13), transparent 28%),
+        linear-gradient(135deg, #020713, #06142c 50%, #031a18);
       color: var(--text);
       font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
     }
@@ -58,8 +58,11 @@
       padding: 22px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: linear-gradient(135deg, rgba(255,255,255,.11), rgba(255,255,255,.035));
+      background:
+        linear-gradient(135deg, rgba(42,255,151,.12), rgba(255,255,255,.035)),
+        linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
       box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
     }
 
     .eyebrow {
@@ -180,9 +183,9 @@
     }
 
     .tab.active {
-      background: linear-gradient(135deg, var(--gold), #d99e31);
-      color: #07162d;
-      box-shadow: 0 12px 30px rgba(246,199,89,.18);
+      background: linear-gradient(135deg, var(--green), #b9ff67);
+      color: #041611;
+      box-shadow: 0 12px 30px rgba(42,192,117,.22), inset 0 0 0 1px rgba(255,255,255,.22);
     }
 
     .meta-row {
@@ -278,6 +281,87 @@
       padding: 13px;
       display: grid;
       gap: 9px;
+    }
+
+    .broadcast-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 172px;
+      padding: 14px;
+      border-color: rgba(255,255,255,.16);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.045)),
+        linear-gradient(90deg, rgba(42,192,117,.08), rgba(246,199,89,.055));
+      box-shadow: 0 18px 42px rgba(0,0,0,.24);
+      backdrop-filter: blur(18px);
+    }
+
+    .broadcast-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-left: 4px solid var(--green);
+      opacity: .9;
+      pointer-events: none;
+    }
+
+    .broadcast-card.live {
+      border-color: rgba(255,66,97,.58);
+      box-shadow: 0 0 0 1px rgba(255,66,97,.18), 0 0 36px rgba(255,66,97,.18), var(--shadow);
+      animation: cardPulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes cardPulse {
+      0%, 100% { transform: translateY(0); filter: brightness(1); }
+      50% { transform: translateY(-2px); filter: brightness(1.08); }
+    }
+
+    .broadcast-teams {
+      display: grid;
+      gap: 8px;
+    }
+
+    .broadcast-team {
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 7px 9px;
+      border-radius: 12px;
+      background: rgba(2, 10, 24, .35);
+    }
+
+    .broadcast-team.winner {
+      background: linear-gradient(90deg, rgba(42,192,117,.2), rgba(246,199,89,.12));
+      box-shadow: inset 0 0 0 1px rgba(42,255,151,.18);
+    }
+
+    .broadcast-team.loser {
+      opacity: .42;
+      filter: grayscale(.45);
+    }
+
+    .broadcast-score {
+      min-width: 58px;
+      text-align: right;
+      color: #f8fff9;
+      font-size: 38px;
+      line-height: .9;
+      font-weight: 1000;
+      letter-spacing: 0;
+      text-shadow: 0 0 18px rgba(42,255,151,.32);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .broadcast-score.live-score {
+      color: #fff;
+      animation: scoreFlash 1.2s ease-in-out infinite;
+    }
+
+    @keyframes scoreFlash {
+      0%, 100% { text-shadow: 0 0 14px rgba(42,255,151,.35); transform: scale(1); }
+      50% { text-shadow: 0 0 26px rgba(42,255,151,.7); transform: scale(1.04); }
     }
 
     .match-top,
@@ -387,18 +471,31 @@
 
     .bracket-area {
       position: relative;
-      height: min(760px, calc(100vh - 260px));
-      min-height: 520px;
-      overflow: auto;
+      padding: 0;
+      overflow: hidden;
       overscroll-behavior: contain;
     }
 
-    .bracket-area::-webkit-scrollbar {
+    .bracket-broadcast {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      min-height: min(780px, calc(100vh - 240px));
+    }
+
+    .bracket-scroll {
+      height: min(780px, calc(100vh - 240px));
+      min-height: 540px;
+      overflow: auto;
+      padding: 16px;
+      border-right: 1px solid var(--line);
+    }
+
+    .bracket-scroll::-webkit-scrollbar {
       width: 10px;
       height: 10px;
     }
 
-    .bracket-area::-webkit-scrollbar-thumb {
+    .bracket-scroll::-webkit-scrollbar-thumb {
       border-radius: 999px;
       background: rgba(255,255,255,.2);
     }
@@ -443,6 +540,17 @@
       z-index: 1;
       pointer-events: none;
       overflow: visible;
+      filter: drop-shadow(0 0 10px rgba(42,255,151,.14));
+    }
+
+    .winner-path {
+      filter: drop-shadow(0 0 5px rgba(42,255,151,.9)) drop-shadow(0 0 16px rgba(42,255,151,.5));
+      animation: pathGlow 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pathGlow {
+      0%, 100% { opacity: .88; }
+      50% { opacity: 1; }
     }
 
     .bracket-match {
@@ -465,8 +573,8 @@
     }
 
     .bracket-match.advanced {
-      border-color: var(--line2);
-      box-shadow: 0 0 0 1px rgba(246,199,89,.18), 0 0 22px rgba(246,199,89,.13);
+      border-color: rgba(42,255,151,.66);
+      box-shadow: 0 0 0 1px rgba(42,255,151,.2), 0 0 28px rgba(42,255,151,.16);
     }
 
     .bracket-match.placeholder {
@@ -491,8 +599,8 @@
     }
 
     .bracket-team.lose {
-      opacity: .55;
-      filter: grayscale(.25);
+      opacity: .34;
+      filter: grayscale(.55);
     }
 
     .bracket-note {
@@ -508,6 +616,104 @@
       background: rgba(255,255,255,.06);
       color: var(--muted);
       font-size: 12px;
+    }
+
+    .intel-panel {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      padding: 16px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(42,255,151,.11), transparent 32%),
+        rgba(2, 10, 24, .38);
+      backdrop-filter: blur(18px);
+    }
+
+    .intel-card {
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,.065);
+      box-shadow: 0 16px 38px rgba(0,0,0,.2);
+      overflow: hidden;
+    }
+
+    .intel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 13px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      color: var(--gold2);
+      font-weight: 950;
+    }
+
+    .intel-body {
+      display: grid;
+      gap: 10px;
+      padding: 12px 13px;
+    }
+
+    .meter-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .meter {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow: hidden;
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), #d5ff65);
+      box-shadow: 0 0 16px rgba(42,255,151,.4);
+    }
+
+    .alert-row {
+      padding: 10px;
+      border: 1px solid rgba(255,66,97,.22);
+      border-radius: 12px;
+      background: rgba(255,66,97,.075);
+      color: #ffd5dc;
+      font-size: 12px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat-tile {
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(2,10,24,.35);
+    }
+
+    .stat-tile strong {
+      display: block;
+      color: #fff;
+      font-size: 23px;
+      line-height: 1;
+    }
+
+    .stat-tile span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
     }
 
     .stats-grid {
@@ -724,7 +930,8 @@
       .tz-select { max-width: 100%; }
       .schedule-grid { grid-template-columns: 1fr; }
       .ai-grid { grid-template-columns: 1fr; }
-      .bracket-area { height: min(720px, calc(100vh - 230px)); min-height: 460px; }
+      .bracket-broadcast { grid-template-columns: 1fr; }
+      .bracket-scroll { height: min(720px, calc(100vh - 230px)); min-height: 460px; border-right: 0; border-bottom: 1px solid var(--line); }
     }
 
     @media (max-width: 620px) {
@@ -895,6 +1102,7 @@
     ];
     const state = {
       matches: [],
+      feedMatches: [],
       bracketSlots: [],
       rawMatches: [],
       activeTab: "schedule",
@@ -1022,6 +1230,7 @@
       state.rawMatches = payload.matches || [];
       const knockout = state.rawMatches.filter(match => footballStageMap[match.stage]);
       state.matches = normalizeMatches(knockout);
+      state.feedMatches = normalizeFeedMatches(state.rawMatches);
       state.emptyReason = state.matches.length ? "" : "小组赛进行中，暂无淘汰赛赛事。";
       state.lastUpdated = fromCache ? new Date(payload.cachedAt || Date.now()) : new Date();
       renderAll();
@@ -1053,18 +1262,43 @@
       });
     }
 
+    function normalizeFeedMatches(matches) {
+      return (matches || []).map((match, index) => normalizeMatch(match, footballStageMap[match.stage] || match.group || `Matchday ${match.matchday || ""}`.trim(), index))
+        .sort((a, b) => (Date.parse(a.utcDate) || 0) - (Date.parse(b.utcDate) || 0));
+    }
+
+    function normalizeMatch(match, stage, index) {
+      const venue = match.venue ? [match.venue, match.area?.name || "城市待定"] : venues[index % venues.length];
+      return {
+        id: String(match.id || `${stage}-${index}`),
+        stage,
+        utcDate: match.utcDate || "",
+        status: statusMap[match.status] || "todo",
+        home: normalizeTeam(match.homeTeam),
+        away: normalizeTeam(match.awayTeam),
+        homeScore: displayScore(match.score, "home"),
+        awayScore: displayScore(match.score, "away"),
+        score: scoreParts(match.score),
+        winner: match.score?.winner || null,
+        venue: venue[0],
+        city: venue[1],
+        events: normalizeEvents(match.events || [], match)
+      };
+    }
+
     function renderAll() {
       renderSchedule();
       renderBracket();
     }
 
     function renderSchedule() {
-      els.scheduleCount.textContent = `${state.matches.length} 场`;
-      if (!state.matches.length) {
+      const feed = state.matches.length ? state.matches : state.feedMatches;
+      els.scheduleCount.textContent = `${feed.length} 场`;
+      if (!feed.length) {
         els.scheduleList.innerHTML = emptyState("赛程日历", state.emptyReason || "小组赛进行中，暂无淘汰赛赛事。");
         return;
       }
-      els.scheduleList.innerHTML = groupByDay(state.matches).map(group => `
+      els.scheduleList.innerHTML = groupByDay(feed).map(group => `
         <section class="day-group">
           <h3 class="day-title">${escapeHtml(group.day)}</h3>
           <div class="schedule-grid">
@@ -1074,15 +1308,19 @@
       `).join("");
     }
     function renderScheduleCard(match) {
+      const homeWin = match.winner === "HOME_TEAM";
+      const awayWin = match.winner === "AWAY_TEAM";
       return `
-        <article class="match-card">
+        <article class="match-card broadcast-card ${match.status === "live" ? "live" : ""}">
           <div class="match-top">
             <span class="stage">${escapeHtml(match.stage)}</span>
             ${statusBadge(match.status)}
           </div>
           <div class="time">${escapeHtml(formatLocalTime(match.utcDate))}</div>
-          <div class="team-row">${teamMarkup(match.home)}<span class="score">${escapeHtml(match.homeScore)}</span></div>
-          <div class="team-row">${teamMarkup(match.away)}<span class="score">${escapeHtml(match.awayScore)}</span></div>
+          <div class="broadcast-teams">
+            <div class="broadcast-team ${homeWin ? "winner" : awayWin ? "loser" : ""}">${teamMarkup(match.home)}<span class="broadcast-score ${match.status === "live" ? "live-score" : ""}">${escapeHtml(match.homeScore)}</span></div>
+            <div class="broadcast-team ${awayWin ? "winner" : homeWin ? "loser" : ""}">${teamMarkup(match.away)}<span class="broadcast-score ${match.status === "live" ? "live-score" : ""}">${escapeHtml(match.awayScore)}</span></div>
+          </div>
           <div class="score-detail">${escapeHtml(scoreDetail(match))}</div>
           <div class="venue">${escapeHtml(match.venue)} · ${escapeHtml(match.city)}</div>
           <div class="match-actions">${liveLink(match)}</div>
@@ -1098,11 +1336,16 @@
         ? "点击任意比赛卡查看详情；晋级路径会随官方结果自动高亮。"
         : "小组赛结束后自动生成完整对阵；当前先展示淘汰赛槽位结构。";
       els.bracketArea.innerHTML = `
-        <div class="bracket-note">${escapeHtml(note)}</div>
-        <div class="bracket-stage-labels" style="width:${layout.width}px">${stages.map(stage => `<div>${escapeHtml(stage.name)}</div>`).join("")}</div>
-        <div class="bracket-canvas" style="width:${layout.width}px;height:${layout.height}px">
-          <svg class="bracket-svg" aria-hidden="true"></svg>
-          ${layout.nodes.map(item => renderBracketNode(item.match, item)).join("")}
+        <div class="bracket-broadcast">
+          <div class="bracket-scroll">
+            <div class="bracket-note">${escapeHtml(note)}</div>
+            <div class="bracket-stage-labels" style="width:${layout.width}px">${stages.map(stage => `<div>${escapeHtml(stage.name)}</div>`).join("")}</div>
+            <div class="bracket-canvas" style="width:${layout.width}px;height:${layout.height}px">
+              <svg class="bracket-svg" aria-hidden="true"></svg>
+              ${layout.nodes.map(item => renderBracketNode(item.match, item)).join("")}
+            </div>
+          </div>
+          ${renderIntelPanel()}
         </div>
       `;
       requestAnimationFrame(drawBracketLines);
@@ -1210,8 +1453,71 @@
         path.setAttribute("stroke", active ? "var(--gold)" : "rgba(255,255,255,.18)");
         path.setAttribute("stroke-width", active ? "3" : "2");
         path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("class", active ? "winner-path" : "bracket-path");
         svg.appendChild(path);
       }
+    }
+
+    function renderIntelPanel() {
+      const feed = state.feedMatches.length ? state.feedMatches : state.matches;
+      const live = feed.filter(match => match.status === "live");
+      const finished = feed.filter(match => match.status === "done");
+      const totalGoals = finished.reduce((sum, match) => sum + numericScore(match.homeScore) + numericScore(match.awayScore), 0);
+      const avgGoals = finished.length ? (totalGoals / finished.length).toFixed(1) : "0.0";
+      const momentum = momentumRows(feed);
+      const alerts = upsetAlerts(feed);
+      return `
+        <aside class="intel-panel" aria-label="实时赛事情报">
+          <section class="intel-card">
+            <div class="intel-head"><span>LIVE INTEL</span><span>${live.length ? "ON AIR" : "STANDBY"}</span></div>
+            <div class="intel-body">
+              <div class="stat-grid">
+                <div class="stat-tile"><strong>${live.length}</strong><span>Live matches</span></div>
+                <div class="stat-tile"><strong>${finished.length}</strong><span>Finished</span></div>
+                <div class="stat-tile"><strong>${totalGoals}</strong><span>Total goals</span></div>
+                <div class="stat-tile"><strong>${avgGoals}</strong><span>Goals / match</span></div>
+              </div>
+            </div>
+          </section>
+          <section class="intel-card">
+            <div class="intel-head"><span>Momentum</span><span>Attack Index</span></div>
+            <div class="intel-body">
+              ${momentum.map(row => `
+                <div class="meter-row">
+                  <div class="meter-label"><span>${escapeHtml(row.label)}</span><span>${row.value}%</span></div>
+                  <div class="meter"><span style="width:${row.value}%"></span></div>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+          <section class="intel-card">
+            <div class="intel-head"><span>Upset Alerts</span><span>${alerts.length}</span></div>
+            <div class="intel-body">
+              ${alerts.length ? alerts.map(alert => `<div class="alert-row">${escapeHtml(alert)}</div>`).join("") : `<div class="alert-row">No major upset pressure detected yet.</div>`}
+            </div>
+          </section>
+        </aside>
+      `;
+    }
+
+    function momentumRows(matches) {
+      const rows = teamGoalRows(matches).slice(0, 4);
+      const max = Math.max(1, ...rows.map(row => row.value));
+      if (!rows.length) return [{ label: "等待实时数据", value: 12 }];
+      return rows.map(row => ({ label: row.label, value: Math.max(8, Math.round(row.value / max * 100)) }));
+    }
+
+    function upsetAlerts(matches) {
+      return matches
+        .filter(match => match.status === "done")
+        .map(match => {
+          const home = plainScore(match.homeScore);
+          const away = plainScore(match.awayScore);
+          const gap = Math.abs(home - away);
+          return gap >= 2 ? `${match.stage}: ${match.home} ${home}-${away} ${match.away}` : "";
+        })
+        .filter(Boolean)
+        .slice(0, 5);
     }
 
     function edgePoint(card, canvasBox, side) {
