@@ -41,11 +41,11 @@ exports.handler = async event => {
     return json(204, {});
   }
 
-  const token = process.env.FOOTBALL_DATA_TOKEN;
+  const token = process.env.FOOTBALL_DATA_KEY || process.env.FOOTBALL_DATA_TOKEN;
   if (!token) {
     return json(200, {
       ok: false,
-      error: "线上环境没有配置 FOOTBALL_DATA_TOKEN。请在 Netlify 站点环境变量中添加它。",
+      error: "线上环境没有配置 FOOTBALL_DATA_KEY。请在 Netlify 站点环境变量中添加它。",
       matches: [],
       teams: [],
       standings: []
