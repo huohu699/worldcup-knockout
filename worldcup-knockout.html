@@ -1395,21 +1395,21 @@
       const cardH = 150;
       const colGap = 260;
       const sidePad = 18;
-      const topPad = 18;
-      const bottomPad = 28;
-      const verticalGap = 30;
       const width = cardW + colGap * (stages.length - 1) + sidePad * 2;
       const maxRoundSize = Math.max(...stages.map(stage => matches.filter(match => match.stage === stage.name).length));
-      const height = Math.max(760, topPad + bottomPad + maxRoundSize * cardH + Math.max(0, maxRoundSize - 1) * verticalGap);
+      const minGap = 30;
+      const height = Math.max(760, maxRoundSize * cardH + (maxRoundSize + 1) * minGap);
       const nodes = [];
+
       for (const stage of stages) {
         const stageMatches = matches.filter(match => match.stage === stage.name);
         const col = stageIndex(stage.name);
-        const available = height - topPad - bottomPad - cardH;
-        const step = stageMatches.length > 1 ? available / (stageMatches.length - 1) : 0;
+        const count = stageMatches.length;
+        const gap = count ? Math.max(0, (height - cardH * count) / (count + 1)) : 0;
+
         stageMatches.forEach((match, index) => {
-          // 每一轮只根据本轮卡片数量均分垂直空间，窗口变化时整体重算，避免重叠。
-          const y = stageMatches.length > 1 ? topPad + index * step : (height - cardH) / 2;
+          // 以同一个列高为基准：间距=(总高-卡高×数量)/(数量+1)，上下留白相等。
+          const y = gap + index * (cardH + gap);
           nodes.push({
             match,
             index,
@@ -1648,31 +1648,63 @@
       const match = state.bracketSlots.find(item => item.id === matchId) || state.matches.find(item => item.id === matchId);
       if (!match || match.placeholder) return;
       const panel = document.querySelector("#aiPanel");
-      if (panel) panel.innerHTML = `<div class="ai-head"><strong>AI 量化分析</strong><button class="ai-action" type="button" disabled>生成中...</button></div><div class="ai-box" style="margin-top:12px"><span>DeepSeek</span><p>正在读取单场详情、两队近3场完赛数据并生成紧凑 JSON。</p></div>`;
+      if (panel) {
+        panel.innerHTML = `
+          <div class="ai-head">
+            <strong>AI 量化分析</strong>
+            <button class="ai-action" type="button" disabled>分析中...</button>
+          </div>
+          <div class="ai-box" style="margin-top:12px"><span>DeepSeek</span><p>正在读取单场详情、两队近3场完赛数据并生成紧凑 JSON。</p></div>
+        `;
+      }
+
       try {
         const url = new URL(AI_URL, window.location.href);
         url.searchParams.set("matchId", matchId);
-        const response = await fetch(url.toString(), { cache: "no-store" });
-        const payload = await response.json().catch(() => ({}));
+
+        let response;
+        try {
+          response = await fetch(url.toString(), { cache: "no-store" });
+        } catch (networkError) {
+          const error = new Error("网络连接失败，请检查网络后重试");
+          error.type = "network";
+          error.detail = networkError;
+          throw error;
+        }
+
+        let payload;
+        try {
+          payload = await response.json();
+        } catch (jsonError) {
+          const error = new Error("AI 分析返回格式异常，请稍后重试");
+          error.type = "json";
+          error.status = response.status;
+          error.detail = jsonError;
+          throw error;
+        }
+
         if (!response.ok || payload.ok === false) {
-          const error = new Error(payload.error || `AI 分析请求失败，HTTP ${response.status}`);
+          const error = new Error(response.status === 502 ? "服务暂时不可用，请稍后重试" : (payload.error || `AI 分析请求失败，HTTP ${response.status}`));
+          error.type = "http";
           error.status = response.status;
           error.detail = payload.detail || payload;
           throw error;
         }
+
         const analysis = payload;
         writeAiCache(matchId, analysis);
         if (panel) panel.outerHTML = renderAiPanel(match, analysis);
         showToast("AI 分析已生成。");
       } catch (error) {
+        const message = error?.status === 502 ? "服务暂时不可用，请稍后重试" : (error?.message || "AI 分析暂时不可用。");
         console.error("AI analysis failed", {
           matchId,
+          type: error?.type || "unknown",
           message: error?.message,
           status: error?.status,
           detail: error?.detail,
           error
         });
-        const message = error?.message || "AI 分析暂时不可用。";
         if (panel) panel.outerHTML = renderAiPanel(match, readAiCache(matchId), message);
         showToast(message);
       }
