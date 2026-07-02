@@ -1,6 +1,7 @@
 const API_BASE = "https://api.football-data.org/v4";
 const DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions";
 const CACHE_TTL = 12 * 60 * 60 * 1000;
+const REQUEST_TIMEOUT = 25000;
 const cache = new Map();
 
 const corsHeaders = {
@@ -14,54 +15,87 @@ function json(statusCode, payload) {
   return { statusCode, headers: corsHeaders, body: JSON.stringify(payload) };
 }
 
-function fail(statusCode, message, detail) {
-  return json(statusCode, { ok: false, error: message, detail: detail || "" });
+function ok(payload) {
+  return json(200, payload);
+}
+
+function errorJson(statusCode, code, message, detail) {
+  return json(statusCode, {
+    ok: false,
+    code,
+    error: message,
+    detail: detail || null
+  });
+}
+
+function makeError(code, message, statusCode = 500, detail = null) {
+  const error = new Error(message);
+  error.code = code;
+  error.statusCode = statusCode;
+  error.detail = detail;
+  return error;
+}
+
+async function withTimeout(label, task, timeoutMs = REQUEST_TIMEOUT) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await task(controller.signal);
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw makeError("REQUEST_TIMEOUT", `${label} request timeout`, 500, { timeoutMs });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function requestJson(url, options, label) {
-  let response;
-  try {
-    response = await fetch(url, options);
-  } catch (error) {
-    const err = new Error(`${label} network error`);
-    err.statusCode = 502;
-    err.detail = error.message;
-    throw err;
-  }
+  return withTimeout(label, async signal => {
+    let response;
+    try {
+      response = await fetch(url, { ...options, signal });
+    } catch (error) {
+      throw makeError("NETWORK_ERROR", `${label} network error`, 500, error.message);
+    }
 
-  const text = await response.text();
-  let payload = {};
-  try {
-    payload = text ? JSON.parse(text) : {};
-  } catch {
-    payload = { raw: text };
-  }
+    const text = await response.text();
+    let payload = {};
+    try {
+      payload = text ? JSON.parse(text) : {};
+    } catch {
+      payload = { raw: text.slice(0, 1200) };
+    }
 
-  if (!response.ok) {
-    const message = payload.message || payload.error?.message || payload.error || `${label} failed`;
-    const err = new Error(message);
-    err.statusCode = response.status;
-    err.detail = payload;
-    throw err;
-  }
+    if (!response.ok) {
+      throw makeError(
+        "UPSTREAM_HTTP_ERROR",
+        payload.message || payload.error?.message || payload.error || `${label} failed`,
+        500,
+        { status: response.status, payload }
+      );
+    }
 
-  return payload;
+    return payload;
+  });
 }
 
-function parseDeepSeekContent(content) {
+function safeParseDeepSeekContent(content) {
   const raw = String(content || "").trim();
   const cleaned = raw
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/```$/i, "")
     .trim();
+
   try {
     return JSON.parse(cleaned);
   } catch (error) {
-    const err = new Error("DeepSeek returned invalid JSON");
-    err.statusCode = 502;
-    err.detail = { content: raw.slice(0, 1200), parseError: error.message };
-    throw err;
+    throw makeError("DEEPSEEK_JSON_PARSE_ERROR", "DeepSeek returned invalid JSON", 500, {
+      parseError: error.message,
+      content: raw.slice(0, 1200)
+    });
   }
 }
 
@@ -103,6 +137,7 @@ function extractSquad(match, side) {
     sideData.bench ||
     sideData.squad?.filter?.(player => player.role === "SUBSTITUTE") ||
     [];
+
   return {
     id: team.id || sideData.teamId || sideData.id,
     name: teamName(team),
@@ -162,7 +197,7 @@ function summarizeRecent(matches, teamId) {
   });
 }
 
-function prompt({ home, away, homeRecent, awayRecent }) {
+function buildPrompt({ home, away, homeRecent, awayRecent }) {
   const hl = JSON.stringify({ s: home.lineup, b: home.bench.slice(0, 3) });
   const al = JSON.stringify({ s: away.lineup, b: away.bench.slice(0, 3) });
   const hr = JSON.stringify(homeRecent);
@@ -184,7 +219,7 @@ disclaimer:"仅赛事技术分析，不代表投注建议"
 输出紧凑，无多余文字。`;
 }
 
-async function deepSeekAnalysis(content, apiKey) {
+async function deepSeekAnalysis(prompt, apiKey) {
   const payload = await requestJson(
     DEEPSEEK_URL,
     {
@@ -199,20 +234,52 @@ async function deepSeekAnalysis(content, apiKey) {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: "你是世界杯赛事量化分析引擎，只输出合法紧凑JSON。" },
-          { role: "user", content }
+          { role: "user", content: prompt }
         ]
       })
     },
-    "DeepSeek request"
+    "DeepSeek"
   );
-  const contentText = payload.choices?.[0]?.message?.content;
-  if (!contentText) {
-    const err = new Error("DeepSeek response missing content");
-    err.statusCode = 502;
-    err.detail = payload;
-    throw err;
+
+  // DeepSeek 200 但结构异常时，也返回函数错误 JSON，避免运行时抛出 502。
+  const content = payload.choices?.[0]?.message?.content;
+  if (!content) {
+    throw makeError("DEEPSEEK_EMPTY_CONTENT", "DeepSeek response missing choices[0].message.content", 500, payload);
   }
-  return parseDeepSeekContent(contentText);
+
+  return safeParseDeepSeekContent(content);
+}
+
+async function buildAnalysis(matchId, footballKey, deepSeekKey) {
+  const footballHeaders = { "X-Auth-Token": footballKey, Accept: "application/json" };
+
+  const matchPayload = await requestJson(
+    `${API_BASE}/matches/${encodeURIComponent(matchId)}`,
+    { headers: footballHeaders },
+    "football-data match detail"
+  );
+  const match = matchPayload.match || matchPayload;
+  const home = extractSquad(match, "home");
+  const away = extractSquad(match, "away");
+
+  if (!home.id || !away.id) {
+    throw makeError("TEAM_ID_MISSING", "match team id missing", 500, { home, away });
+  }
+
+  const [homeMatches, awayMatches] = await Promise.all([
+    requestJson(`${API_BASE}/teams/${home.id}/matches?status=FINISHED&limit=3`, { headers: footballHeaders }, "football-data home recent matches"),
+    requestJson(`${API_BASE}/teams/${away.id}/matches?status=FINISHED&limit=3`, { headers: footballHeaders }, "football-data away recent matches")
+  ]);
+
+  return deepSeekAnalysis(
+    buildPrompt({
+      home,
+      away,
+      homeRecent: summarizeRecent(homeMatches.matches, home.id),
+      awayRecent: summarizeRecent(awayMatches.matches, away.id)
+    }),
+    deepSeekKey
+  );
 }
 
 exports.handler = async event => {
@@ -220,46 +287,27 @@ exports.handler = async event => {
 
   try {
     const matchId = event.queryStringParameters?.matchId;
-    if (!matchId) return fail(400, "missing matchId");
-
-    const cached = cache.get(matchId);
-    if (cached && cached.expires > Date.now()) return json(200, cached.data);
-
     const footballKey = process.env.FOOTBALL_DATA_KEY || process.env.FOOTBALL_DATA_TOKEN;
     const deepSeekKey = process.env.DEEPSEEK_KEY;
-    if (!footballKey) return fail(500, "missing FOOTBALL_DATA_KEY");
-    if (!deepSeekKey) return fail(500, "missing DEEPSEEK_KEY");
 
-    const footballHeaders = { "X-Auth-Token": footballKey, Accept: "application/json" };
-    const matchPayload = await requestJson(
-      `${API_BASE}/matches/${encodeURIComponent(matchId)}`,
-      { headers: footballHeaders },
-      "match detail"
-    );
-    const match = matchPayload.match || matchPayload;
-    const home = extractSquad(match, "home");
-    const away = extractSquad(match, "away");
-    if (!home.id || !away.id) return fail(502, "match team id missing", { home, away });
+    // 入口参数与环境变量校验，缺失返回 400，不进入上游请求。
+    if (!matchId) return errorJson(400, "MISSING_MATCH_ID", "missing matchId");
+    if (!footballKey) return errorJson(400, "MISSING_FOOTBALL_DATA_KEY", "missing FOOTBALL_DATA_KEY");
+    if (!deepSeekKey) return errorJson(400, "MISSING_DEEPSEEK_KEY", "missing DEEPSEEK_KEY");
 
-    const [homeMatches, awayMatches] = await Promise.all([
-      requestJson(`${API_BASE}/teams/${home.id}/matches?status=FINISHED&limit=3`, { headers: footballHeaders }, "home recent matches"),
-      requestJson(`${API_BASE}/teams/${away.id}/matches?status=FINISHED&limit=3`, { headers: footballHeaders }, "away recent matches")
-    ]);
+    const cached = cache.get(matchId);
+    if (cached && cached.expires > Date.now()) return ok(cached.data);
 
-    const analysis = await deepSeekAnalysis(
-      prompt({
-        home,
-        away,
-        homeRecent: summarizeRecent(homeMatches.matches, home.id),
-        awayRecent: summarizeRecent(awayMatches.matches, away.id)
-      }),
-      deepSeekKey
-    );
-
+    const analysis = await buildAnalysis(matchId, footballKey, deepSeekKey);
     cache.set(matchId, { expires: Date.now() + CACHE_TTL, data: analysis });
-    return json(200, analysis);
+    return ok(analysis);
   } catch (error) {
     console.error("ai-analysis failed", error);
-    return fail(error.statusCode || 500, error.message || "analysis failed", error.detail || "");
+    return errorJson(
+      500,
+      error.code || "AI_ANALYSIS_FAILED",
+      error.message || "ai-analysis failed",
+      error.detail || null
+    );
   }
 };
