@@ -1292,7 +1292,7 @@
     }
 
     function renderSchedule() {
-      const feed = state.matches.length ? state.matches : state.feedMatches;
+      const feed = scheduleSort(state.matches.length ? state.matches : state.feedMatches);
       els.scheduleCount.textContent = `${feed.length} 场`;
       if (!feed.length) {
         els.scheduleList.innerHTML = emptyState("赛程日历", state.emptyReason || "小组赛进行中，暂无淘汰赛赛事。");
@@ -1326,6 +1326,28 @@
           <div class="match-actions">${liveLink(match)}</div>
         </article>
       `;
+    }
+
+    function scheduleSort(matches) {
+      const now = Date.now();
+      return [...matches].sort((a, b) => {
+        const rankA = scheduleRank(a, now);
+        const rankB = scheduleRank(b, now);
+        if (rankA !== rankB) return rankA - rankB;
+
+        const timeA = Date.parse(a.utcDate) || 0;
+        const timeB = Date.parse(b.utcDate) || 0;
+        if (rankA === 3) return timeB - timeA;
+        return timeA - timeB;
+      });
+    }
+
+    function scheduleRank(match, now) {
+      if (match.status === "live") return 0;
+      if (match.status === "done") return 3;
+      const time = Date.parse(match.utcDate);
+      if (!Number.isFinite(time)) return 2;
+      return time >= now ? 1 : 2;
     }
 
     function renderBracket() {
